@@ -24,6 +24,7 @@ void Rules();
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
+    const short    SIZE(13);
     float          cash=0,
                    bet=0,
                    minBet,
@@ -33,6 +34,7 @@ int main() {
     short          nStks=0,
                    deck=52,     //number of cards in deck
                    drawV,       //value of card drawn
+                   sub,         //subscript used for parallel arrays
                    hand,        //number of cards in hand
                    dHand,       //dealer's hand
                    score,       //user's blackjack score
@@ -44,13 +46,16 @@ int main() {
                    rstrt,       //used to set restart value with y/n
                    ans,         //used to set draw value with y/n
                    mnuRtrn;     //used to return to the menu
-    bool           draw,        //used to execute draw function
+    bool           fourCrd,     //checks for valid # of cards
+                   draw,        //used to execute draw function
                    viewHnd,     //view hand
                    stand,       //user stops drawing
                    dStand,      //dealer stops drawing
                    restart,     //restarts the game
                    menu;        //continues the menu loop
-    string         crdType,     //converts drawV to card type string
+    string         crdType[SIZE]={"Ace","Two","Three","Four","Five","Six",
+                                  "Seven","Eight","Nine","Ten","Jack",
+                                  "Queen","King"},
                    faceD;       //dealer's facedown card
 
     //Process/Calculations Here
@@ -84,19 +89,16 @@ int main() {
         case '3':lStks=1.50;break;
     }
     
-        short dAce=0,d2=0,d3=0,d4=0,d5=0,d6=0,d7=0,d8=0,d9=0,d10=0, 
-                dJ=0,dQ=0,dK=0;    //tracks cards taken from the deck
+        short cDeck[SIZE]={0};    //tracks cards taken from the deck
         
         cash=nStks+hStks+lStks;
         cout<<fixed<<setprecision(2);
-    do {
-        
-        turn=2;
         srand(time(0));       
-        short hAce=0,h2=0,h3=0,h4=0,h5=0,h6=0,h7=0,h8=0,h9=0,h10=0,
-              hJ=0,hQ=0,hK=0,     //cards in hand
-              dhAce=0,dh2=0,dh3=0,dh4=0,dh5=0,dh6=0,dh7=0,dh8=0,dh9=0,dh10=0,
-              dhJ=0,dhQ=0,dhK=0;  //cards in dealer's hand
+        
+    do {
+        turn=2;
+        short cHand[SIZE]={0},    //cards in hand
+              cDealer[SIZE]={0};  //cards in dealer's hand
         hand=0;
         dHand=0;
         faceD="nothing";
@@ -120,61 +122,49 @@ int main() {
         cash-=bet;
         
       do {
+          score=0;
+          dScore=0;
           if (turn>0){hand++;}else{dHand++;}
           if((dStand==false&&turn<0)||(stand==false&&turn>0)){
           deck--;
           viewHnd=false;
           do{
-              crdType="Redraw";
-              drawV=rand()%13+1;
-                  switch (drawV){
-                      case 1:if(dAce!=4){crdType="an Ace";
-                      if(turn>0){hAce++;}else{dhAce++;}dAce++;}break;    //Checks number of card taken from deck - if it's 4, defaults and 
-                      case 2:if(d2!=4){crdType="a Two";
-                      if(turn>0){h2++;}else{dh2++;}d2++;}break;           //rerolls drawV. If it's less than 4, add the card to your hand,
-                      case 3:if(d3!=4){crdType="a Three";
-                      if(turn>0){h3++;}else{dh3++;}d3++;}break;         //output the card type, and add to the number taken from the deck
-                      case 4:if(d4!=4){crdType="a Four";
-                      if(turn>0){h4++;}else{dh4++;}d4++;}break;
-                      case 5:if(d5!=4){crdType="a Five";
-                      if(turn>0){h5++;}else{dh5++;}d5++;}break;
-                      case 6:if(d6!=4){crdType="a Six";
-                      if(turn>0){h6++;}else{dh6++;}d6++;}break;
-                      case 7:if(d7!=4){crdType="a Seven";
-                      if(turn>0){h7++;}else{dh7++;}d7++;}break;
-                      case 8:if(d8!=4){crdType="an Eight";
-                      if(turn>0){h8++;}else{dh8++;}d8++;}break;
-                      case 9:if(d9!=4){crdType="a Nine";
-                      if(turn>0){h9++;}else{dh9++;}d9++;}break;
-                      case 10:if(d10!=4){crdType="a Ten";
-                      if(turn>0){h10++;}else{dh10++;}d10++;}break;
-                      case 11:if(dJ!=4){crdType="a Jack";
-                      if(turn>0){hJ++;}else{dhJ++;}dJ++;}break;
-                      case 12:if(dQ!=4){crdType="a Queen";
-                      if(turn>0){hQ++;}else{dhQ++;}dQ++;}break;
-                      case 13:if(dK!=4){crdType="a King";
-                      if(turn>0){hK++;}else{dhK++;}dK++;}break;
-                   }    //card Table
-          }while (crdType=="Redraw");   //card type table
+              fourCrd=true;
+              sub=rand()%13;
+              if(cDeck[sub]!=4){
+                  fourCrd=false;
+                  cDeck[sub]++;
+                  if(turn>0){
+                      cHand[sub]++;
+                  }else{
+                      cDealer[sub]++;
+                  }
+              }
+            }while (fourCrd==true);   //card draw randomizer
           }
-          dScore=2*dh2+3*dh3+4*dh4+5*dh5+6*dh6+7*dh7+8*dh8+9*dh9+10*dh10+10*dhJ+
-                  10*dhQ+10*dhK;    //calculate dealer's score
-          for(short dAces=dhAce;dAces>0;dAces--){   //determines values of aces in dealer's hand
+          for (short dh=1;dh<SIZE;dh++){
+              if(dh<10){dScore+=cDealer[dh]*(dh+1);}
+              else{dScore+=cDealer[dh]*10;}
+          }
+          for(short dAces=cDealer[0];dAces>0;dAces--){   //determines values of aces in dealer's hand
               if(dScore<=10){dScore+=11;}
               else{dScore+=1;}
           }
-          score=2*h2+3*h3+4*h4+5*h5+6*h6+7*h7+8*h8+9*h9+10*h10+10*hJ+10*hQ+10*hK;   //calculate score by multiplying hand quantities by card values
-          for(short aces=hAce;aces>0;aces--){   //determines values of aces in hand
+          for (short h=1;h<SIZE;h++){
+              if(h<10){score+=cHand[h]*(h+1);}
+              else{score+=cHand[h]*10;}
+          }
+          for(short aces=cHand[0];aces>0;aces--){   //determines values of aces in dealer's hand
               if(score<=10){score+=11;}
               else{score+=1;}
           }
           
           if(turn>0&&stand==false){
-          cout<<"The dealer hands you "<<crdType<<".        Deck: "<<deck<<endl;   //tell the user what they drew
+          cout<<"The dealer hands you a(n)"<<crdType[sub]<<".        Deck: "<<deck<<endl;   //tell the user what they drew
           cout<<"Score: "<<score<<endl;}
           if(turn==1&&faceD!="nothing"&&score<21){
-              cout<<"The dealer flips his card. It's "<<faceD<<"."<<endl;
-              cout<<"Dealer's Score: "<<dScore<<endl;
+              cout<<"The dealer flips his card. It's a(n) "<<faceD<<"."<<endl;
+              cout<<"Dealer's Score: "<<dScore<<endl<<endl;
               if(dScore>=17&&dScore<22){
                   cout<<"The dealer stands."<<endl;
                   dStand=true;
@@ -187,10 +177,10 @@ int main() {
                   draw=false;
               }
           }else if(turn==-2){
-          cout<<"The dealer draws "<<crdType<<".        Deck: "<<deck<<endl;
-          cout<<"Dealer's Score: "<<dScore<<endl;
+          cout<<"The dealer draws a(n) "<<crdType[sub]<<".        Deck: "<<deck<<endl;
+          cout<<"Dealer's Score: "<<dScore<<endl<<endl;
           }else if(turn==-1&&score<21&&dStand==false){
-              faceD=crdType;
+              faceD=crdType[sub];
               cout<<"The dealer draws a card and places it face-down."<<endl;
           }
           
@@ -221,19 +211,15 @@ int main() {
           }
           if(viewHnd==true){
               cout<<"You have "<<hand<<" cards in your hand"<<endl;
-                if (hAce>0){cout<<"Aces: "<<hAce<<endl;} //displays how many of each type of card is in the user's hand
-                if (h2>0){cout<<"Twos: "<<h2<<endl;}
-                if (h3>0){cout<<"Threes: "<<h3<<endl;}
-                if (h4>0){cout<<"Fours: "<<h4<<endl;}
-                if (h5>0){cout<<"Fives: "<<h5<<endl;}
-                if (h6>0){cout<<"Sixes: "<<h6<<endl;}
-                if (h7>0){cout<<"Sevens: "<<h7<<endl;}
-                if (h8>0){cout<<"Eights: "<<h8<<endl;}
-                if (h9>0){cout<<"Nines: "<<h9<<endl;}
-                if (h10>0){cout<<"Tens: "<<h10<<endl;}
-                if (hJ>0){cout<<"Jacks: "<<hJ<<endl;}
-                if (hQ>0){cout<<"Queens: "<<hQ<<endl;}
-                if (hK>0){cout<<"Kings: "<<hK<<endl;}
+              for(short l=0;l<SIZE;l++){
+                  if(cHand[l]>0){
+                      cout<<"You have "<<cHand[l]<<" "<<crdType[l];
+                      if(cHand[l]!=1){
+                          cout<<"s";
+                      }
+                      cout<<endl;
+                  }
+              }
                 cout<<"Score: "<<score<<endl;
                 cout<<endl;
                 cout<<"h - Hit  s - Stand"<<endl;
@@ -250,8 +236,8 @@ int main() {
                     case 'S':stand=true;break;
                 }//view hand
           }}
-          if(turn==-2){turn+=1;}
-          turn*=-1;
+          if(turn==-2){turn+=1;}    //if it's the first turn, make it not the first turn
+          turn*=-1;                 //switch from player to dealer
           
           if(stand==true&&dStand==true&&score<21){
               draw=false;
@@ -273,6 +259,9 @@ int main() {
       
       cout<<"Wins: "<<wins<<"   Losses: "<<losses<<endl;
       cout<<"Total Winnings: $"<<winings<<endl;
+      for(short l=0;l<SIZE;l++){
+          cout<<l+1<<": "<<cDeck[l]<<endl;
+      }
       
         cout << endl;
         cout << "Play again? y/n" << endl;
@@ -286,8 +275,9 @@ int main() {
             if(deck<13&&cash!=0){
                 cout<<"The dealer shuffles the deck"<<endl;
                 deck=52;
-                dAce=0,d2=0,d3=0,d4=0,d5=0,d6=0,d7=0,d8=0,d9=0,d10=0, 
-                dJ=0,dQ=0,dK=0;
+                for(short l=0;l<SIZE;l++){
+                    cDeck[l]=0;
+                }
             }
             if(cash==0){
                 cout<<"You're broke! Better luck next time."<<endl;
@@ -296,7 +286,7 @@ int main() {
         }else{restart=false;}
         
         } while (restart);
-        cout<<"Would you like to return to the menu?"<<endl;
+        cout<<"Would you like to return to the menu? y/n"<<endl;
         cin>>mnuRtrn;
         while(mnuRtrn!='y'&&mnuRtrn!='n'){
             cout<<"Invalid input. Please enter y/n."<<endl;

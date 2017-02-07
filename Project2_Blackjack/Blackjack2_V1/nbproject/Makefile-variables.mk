@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=Cygwin-Windows
 CND_ARTIFACT_DIR_Debug=dist/Debug/Cygwin-Windows
-CND_ARTIFACT_NAME_Debug=blackjack_v5
-CND_ARTIFACT_PATH_Debug=dist/Debug/Cygwin-Windows/blackjack_v5
+CND_ARTIFACT_NAME_Debug=blackjack2_v1
+CND_ARTIFACT_PATH_Debug=dist/Debug/Cygwin-Windows/blackjack2_v1
 CND_PACKAGE_DIR_Debug=dist/Debug/Cygwin-Windows/package
-CND_PACKAGE_NAME_Debug=blackjackv5.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/Cygwin-Windows/package/blackjackv5.tar
+CND_PACKAGE_NAME_Debug=blackjack2v1.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/Cygwin-Windows/package/blackjack2v1.tar
 # Release configuration
 CND_PLATFORM_Release=Cygwin-Windows
 CND_ARTIFACT_DIR_Release=dist/Release/Cygwin-Windows
-CND_ARTIFACT_NAME_Release=blackjack_v5
-CND_ARTIFACT_PATH_Release=dist/Release/Cygwin-Windows/blackjack_v5
+CND_ARTIFACT_NAME_Release=blackjack2_v1
+CND_ARTIFACT_PATH_Release=dist/Release/Cygwin-Windows/blackjack2_v1
 CND_PACKAGE_DIR_Release=dist/Release/Cygwin-Windows/package
-CND_PACKAGE_NAME_Release=blackjackv5.tar
-CND_PACKAGE_PATH_Release=dist/Release/Cygwin-Windows/package/blackjackv5.tar
+CND_PACKAGE_NAME_Release=blackjack2v1.tar
+CND_PACKAGE_PATH_Release=dist/Release/Cygwin-Windows/package/blackjack2v1.tar
 #
 # include compiler specific variables
 #
