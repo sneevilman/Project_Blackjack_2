@@ -20,15 +20,21 @@ using namespace std;
 
 //Function Prototypes Here
 void Rules();
-
+short drwChck(short c[],short s);
+bool viewHnd(short,short[],short,string[],short,short);
+bool Restart();
+bool Menu();
+float WinLoss(short,float,float,char,float[][2],short);
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
-    const short    SIZE(13);
+    const short    SIZE(13),
+                   DATSIZE(50);
     float          cash=0,
                    bet=0,
                    minBet,
                    winings=0,
+                   gameDat[DATSIZE][2]={{0,0}},    //stores game#,win/loss,winnings
                    lStks=0;
     long           hStks=0;
     short          nStks=0,
@@ -39,16 +45,14 @@ int main() {
                    dHand,       //dealer's hand
                    score,       //user's blackjack score
                    dScore,      //dealer's blackjack score
-                   wins=0,      //total wins
-                   losses=0,    //total losses
+                   nGames,      //number of games
                    turn;        //determines whose turn it is
     char           pckGame,     //user picks game mode
+                   win,         //passes win/loss to win/loss function
                    rstrt,       //used to set restart value with y/n
-                   ans,         //used to set draw value with y/n
-                   mnuRtrn;     //used to return to the menu
+                   ans;         //used to set stand value with y/n
     bool           fourCrd,     //checks for valid # of cards
                    draw,        //used to execute draw function
-                   viewHnd,     //view hand
                    stand,       //user stops drawing
                    dStand,      //dealer stops drawing
                    restart,     //restarts the game
@@ -65,6 +69,7 @@ int main() {
           "Low-Stakes Blackjack!"<<endl;
     
     do{
+    nGames=0;     //initialize number of games
     cout<<  "1 - Blackjack\n"
             "2 - High-Stakes Blackjack\n"
             "3 - Low-Stakes Blackjack\n"
@@ -96,6 +101,8 @@ int main() {
         srand(time(0));       
         
     do {
+        nGames++;
+        win=-1;                   //initialize as value that doesn't end game
         turn=2;
         short cHand[SIZE]={0},    //cards in hand
               cDealer[SIZE]={0};  //cards in dealer's hand
@@ -119,7 +126,6 @@ int main() {
         while (bet>cash){cout<<"You can't afford that.\n"
                 "Place a bet."<<endl;
                 cin>>bet;}
-        cash-=bet;
         
       do {
           score=0;
@@ -127,20 +133,9 @@ int main() {
           if (turn>0){hand++;}else{dHand++;}
           if((dStand==false&&turn<0)||(stand==false&&turn>0)){
           deck--;
-          viewHnd=false;
-          do{
-              fourCrd=true;
-              sub=rand()%13;
-              if(cDeck[sub]!=4){
-                  fourCrd=false;
-                  cDeck[sub]++;
-                  if(turn>0){
-                      cHand[sub]++;
-                  }else{
-                      cDealer[sub]++;
-                  }
-              }
-            }while (fourCrd==true);   //card draw randomizer
+          sub=drwChck(cDeck,SIZE);      //sets a card draw value, checks and returns it
+          if(turn>0){cHand[sub]++;}
+          else{cDealer[sub]++;}
           }
           for (short dh=1;dh<SIZE;dh++){
               if(dh<10){dScore+=cDealer[dh]*(dh+1);}
@@ -162,18 +157,19 @@ int main() {
           if(turn>0&&stand==false){
           cout<<"The dealer hands you a(n)"<<crdType[sub]<<".        Deck: "<<deck<<endl;   //tell the user what they drew
           cout<<"Score: "<<score<<endl;}
-          if(turn==1&&faceD!="nothing"&&score<21){
+          if(turn==1&&faceD!="nothing"&&score<21&&dStand==false){
               cout<<"The dealer flips his card. It's a(n) "<<faceD<<"."<<endl;
               cout<<"Dealer's Score: "<<dScore<<endl<<endl;
-              if(dScore>=17&&dScore<22){
+              if(dScore>=17&&dScore<21){
                   cout<<"The dealer stands."<<endl;
                   dStand=true;
               }else if(dScore>21){
                   cout<<"The dealer busts. You win!"<<endl;
-                  wins++;
-                  cash+=2*bet;
-                  winings+=2*bet;
-                  cout<<"Winnings: $"<<2*bet<<endl;
+                  win=1;
+                  draw=false;
+              }else if(dScore==21){
+                  cout<<"Blackjack! The house wins!"<<endl;
+                  win=0;
                   draw=false;
               }
           }else if(turn==-2){
@@ -186,35 +182,122 @@ int main() {
           
           if(turn==-1&&stand==false){
           if(score==21){cout<<"Blackjack!"<<endl;
-              cout<<"Winnings: $"<<2*bet<<endl;
-              wins++;
-              cash+=2*bet;
-              winings+=2*bet;
+              win=1;
               draw=false;}
-          if(score>21){cout<<"Busted!"<<endl;losses++;winings-=bet;draw=false;}
+          if(score>21){cout<<"Busted!"<<endl;
+              win=0;
+              draw=false;}
           if(score<21&&turn!=-2){
               cout<<"h - Hit  s - Stand  v - View Hand"<<endl;
               cin>>ans;
-              while(ans!='H'&&ans!='h'&&ans!='S'&&ans!='s'&&ans!='v'&&ans!='V'){
+              if(ans<87){ans+=32;}      //converts input to lower case
+              while(ans!='h'&&ans!='s'&&ans!='v'){
                   cout<<"Invalid input. Please enter one of the listed commands."
                           <<endl;
                   cin>>ans;
+                  if(ans<87){ans+=32;}
               }
               switch(ans){
-                  case 'H':draw=true;break;
-                  case 'h':draw=true;break;
-                  case 'S':stand=true;break;
                   case 's':;stand=true;break;
-                  case 'v':viewHnd=true;break;
-                  case 'V':viewHnd=true;break;
+                  case 'v':stand=viewHnd(hand,cHand,SIZE,crdType,SIZE,score);
                     }
+          }}
+          if(turn==-2){turn+=1;}    //if it's the first turn, make it not the first turn
+          turn*=-1;                 //switch from player to dealer
+          
+          if(stand==true&&dStand==true&&score<21){
+              cout<<"Your score: "<<score<<endl;
+              cout<<"Dealer's score: "<<dScore<<endl;
+              if(score>dScore){cout<<"You win!"<<endl;
+              win=1;}
+              if(score<dScore){cout<<"The house wins!"<<endl;
+              win=0;}
+              if(score==dScore){cout<<"Tie! You and the dealer split the pot."
+                      <<endl;
+                  win=2;
+              }
           }
-          if(viewHnd==true){
-              cout<<"You have "<<hand<<" cards in your hand"<<endl;
-              for(short l=0;l<SIZE;l++){
-                  if(cHand[l]>0){
-                      cout<<"You have "<<cHand[l]<<" "<<crdType[l];
-                      if(cHand[l]!=1){
+          if(win>-1)draw=false;
+      }while(draw);
+      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE);
+      
+            restart=Restart();
+            if (restart==true){
+            if(deck<13&&cash!=0){
+                cout<<"The dealer shuffles the deck."<<endl;
+                deck=52;
+                for(short l=0;l<SIZE;l++){
+                    cDeck[l]=0;
+                    }
+               }
+            if(cash==0){
+                cout<<"You're broke! Better luck next time."<<endl;
+                restart=false;
+               }
+        }
+        
+        } while (restart);
+        
+        cout<<"Would you like to view your game data?"<<endl;
+        cin>>ans;
+        if(ans<79){ans+=32;}
+        while(ans!='n'&&ans!='y'){
+            cout<<"Invalid input. Please enter y/n."<<endl;
+            cin>>ans;
+        }
+        if(ans=='y'){
+            short wins=0,
+                  losses=0,
+                  ties=0;
+                  winings=0;
+            for(short l=0;l<nGames;l++){
+                winings+=gameDat[l][1];
+                cout<<"Game #"<<l+1<<": ";
+                if(gameDat[l][0]==0){
+                    cout<<setw(4)<<"Loss";
+                    losses++;}
+                else if(gameDat[l][0]==1){
+                    cout<<setw(4)<<"Win";
+                    wins++;}
+                else if(gameDat[l][0]==2){
+                    cout<<setw(4)<<"Tie";
+                    ties++;}
+                cout<<"  $"<<gameDat[l][1]<<endl;
+                cout<<endl;
+            }
+            cout<<"Wins: "<<wins<<endl;
+            cout<<"Losses: "<<losses<<endl;
+            cout<<"Ties: "<<ties<<endl;
+            cout<<"Total Winnings: $"<<winings<<endl;
+        }
+        menu=Menu();
+    }while(menu);
+    //Output Located Here
+
+    //Exit
+    return 0;
+}
+short drwChck(short c[],short s){
+       short sub; 
+       bool fourCrd;
+    do{
+        fourCrd=true;
+        sub=rand()%13;
+        if(c[sub]!=4){
+            fourCrd=false;
+        }
+    }while(fourCrd);
+    c[sub]++;
+    return sub;
+}
+bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
+ bool stand;
+ char ans;
+ cout<<"You have "<<h<<" cards in your hand"<<endl;
+              for(short l=0;l<sizeH;l++){
+                  if(cH[l]>0){
+                      cout<<"You have "<<cH[l]<<" "<<t[l];
+                      if(cH[l]!=1){
                           cout<<"s";
                       }
                       cout<<endl;
@@ -224,83 +307,37 @@ int main() {
                 cout<<endl;
                 cout<<"h - Hit  s - Stand"<<endl;
                 cin>>ans;
-                while(ans!='h'&&ans!='H'&&ans!='s'&&ans!='S'){
+                if(ans<84)ans+=32;
+                while(ans!='h'&&ans!='s'){
                     cout<<"Invalid input. Please enter one of the listed"
                             " commands"<<endl;
                     cin>>ans;
+                    if(ans<84)ans+=32;
                 }
                 switch(ans){
-                    case 'h':draw=true;break;
-                    case 'H':draw=true;break;
+                    case 'h':stand=false;break;
                     case 's':stand=true;break;
-                    case 'S':stand=true;break;
                 }//view hand
-          }}
-          if(turn==-2){turn+=1;}    //if it's the first turn, make it not the first turn
-          turn*=-1;                 //switch from player to dealer
-          
-          if(stand==true&&dStand==true&&score<21){
-              draw=false;
-              cout<<"Your score: "<<score<<endl;
-              cout<<"Dealer's score: "<<dScore<<endl;
-              if(score>dScore){cout<<"You win!"<<endl;
-                    wins++;
-                    cash+=2*bet;
-                    cout<<"Winnings: $"<<2*bet<<endl;
-                    winings+=2*bet;}
-              if(score<dScore){cout<<"The house wins!"<<endl;winings-=bet;
-                    losses++;}
-              if(score==dScore){
-                  cout<<"Tie! You and the dealer split the pot."<<endl;
-                  cash+=bet;
-              }
+        return stand;
           }
-      }while(draw);
-      
-      cout<<"Wins: "<<wins<<"   Losses: "<<losses<<endl;
-      cout<<"Total Winnings: $"<<winings<<endl;
-      
-        cout << endl;
-        cout << "Play again? y/n" << endl;
-        cin>>rstrt;
-        while (rstrt != 'y' && rstrt != 'n' && rstrt != 'Y' && rstrt != 'N') {
-            cout << "Please enter y/n" << endl;
-            cin>>rstrt;
-        }
-        if (rstrt == 'y' || rstrt == 'Y'){
-            restart = true;
-            if(deck<13&&cash!=0){
-                cout<<"The dealer shuffles the deck"<<endl;
-                deck=52;
-                for(short l=0;l<SIZE;l++){
-                    cDeck[l]=0;
-                }
-            }
-            if(cash==0){
-                cout<<"You're broke! Better luck next time."<<endl;
-                restart=false;
-      }
-        }else{restart=false;}
-        
-        } while (restart);
-        cout<<"Would you like to return to the menu? y/n"<<endl;
-        cin>>mnuRtrn;
-        while(mnuRtrn!='y'&&mnuRtrn!='n'){
-            cout<<"Invalid input. Please enter y/n."<<endl;
-            cin>>mnuRtrn;
-        }
-        if(mnuRtrn=='y'){
-            menu=true;
-        }else{
-            menu=false;
-        }
-    }while(menu);
-    //Output Located Here
-
-    //Exit
-    return 0;
+float WinLoss(short nGames,float bet,float cash,char win,float g[][2],short size){
+    if(nGames%size>0){nGames=nGames%size;}  //overwrites game data for numbers/multiples of games over 50
+    g[nGames-1][0]=win;   
+    if(win==1){                 //for this array, the 0 subscript indicates wins/losses;
+        g[nGames-1][1]=bet;   //the 1 subscript stores values for winnings
+    }else if(win==0){
+        g[nGames-1][1]=-bet;
+    }else{
+        g[nGames-1][1]=0;
+    }
+    cash+=g[nGames-1][1];
+    cout<<"nGames"<<nGames<<endl;
+    cout<<"cash: "<<cash<<endl;
+    cout<<"g["<<nGames-1<<"][0]"<<g[nGames-1][0]<<endl;
+    cout<<"g["<<nGames-1<<"][1]"<<g[nGames-1][1]<<endl;
+    return cash;
+                            
 }
-
 void Rules(){
     cout<<"Blackjack is a fun, fast-paced and simple game that anyone can play.\n"
           "The goal of the game is to get a hand that adds to 21, or at\n"
@@ -331,4 +368,36 @@ void Rules(){
             "If you and the dealer end with the same score, it's a tie,\n"
             "and you get your bet back.\n"
             "Now go and win some money!"<<endl;
+}
+bool Restart() {
+    char ans;
+    bool restart;
+    cout << endl;
+    cout << "Would you like to run this program again? y/n" << endl;
+    cin>>ans;
+    while (ans != 'y' && ans != 'n' && ans != 'Y' && ans != 'N') {
+        cout << "Please enter y/n" << endl;
+        cin>>ans;
+    }
+    if (ans == 'y' || ans == 'Y')
+        restart = true;
+    else
+        restart = false;
+    return restart;
+}
+bool Menu() {
+    char ans;
+    bool menu;
+    cout << endl;
+    cout << "Would you like to return to the menu? y/n" << endl;
+    cin>>ans;
+    while (ans != 'y' && ans != 'n' && ans != 'Y' && ans != 'N') {
+        cout << "Please enter y/n" << endl;
+        cin>>ans;
+    }
+    if (ans == 'y' || ans == 'Y')
+        menu = true;
+    else
+        menu = false;
+    return menu;
 }
