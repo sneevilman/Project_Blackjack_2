@@ -259,9 +259,6 @@ int main() {
       
       cout<<"Wins: "<<wins<<"   Losses: "<<losses<<endl;
       cout<<"Total Winnings: $"<<winings<<endl;
-      for(short l=0;l<SIZE;l++){
-          cout<<l+1<<": "<<cDeck[l]<<endl;
-      }
       
         cout << endl;
         cout << "Play again? y/n" << endl;
