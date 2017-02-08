@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <string>
 #include <iomanip>
+#include <fstream>
 
 using namespace std;
 
@@ -46,6 +47,7 @@ int main() {
                    dHand,       //dealer's hand
                    score,       //user's blackjack score
                    dScore,      //dealer's blackjack score
+                   dScoreF,     //dealer's final score, for bookkeeping
                    nGames,      //number of games
                    turn;        //determines whose turn it is
     char           pckGame,     //user picks game mode
@@ -141,9 +143,10 @@ int main() {
           else{cDealer[sub]++;}
           }
           for (short dh=1;dh<SIZE;dh++){
-              if(dh<10){dScore+=cDealer[dh]*(dh+1);}
-              else{dScore+=cDealer[dh]*10;}
+              if(dh<10){dScore+=cDealer[dh]*(dh+1);}                             //uses face down card value to create
+              else{dScore+=cDealer[dh]*10;}              //accurate game history
           }
+          
           for(short dAces=cDealer[0];dAces>0;dAces--){   //determines values of aces in dealer's hand
               if(dScore<=10){dScore+=11;}
               else{dScore+=1;}
@@ -158,11 +161,12 @@ int main() {
           }
           
           if(turn>0&&stand==false){
-          cout<<"The dealer hands you a(n)"<<crdType[sub]<<".        Deck: "<<deck<<endl;   //tell the user what they drew
-          cout<<"Score: "<<score<<endl;}
+          cout<<"The dealer hands you a(n)"<<crdType[sub]<<"."<<endl;   //tell the user what they drew
+          cout<<setw(16)<<right<<"Score: "<<setw(3)<<right<<score<<endl;}
           if(turn==1&&faceD!="nothing"&&score<21&&dStand==false){
               cout<<"The dealer flips his card. It's a(n) "<<faceD<<"."<<endl;
-              cout<<"Dealer's Score: "<<dScore<<endl<<endl;
+              cout<<setw(16)<<right<<"Dealer's Score: "<<setw(3)<<right<<dScore<<endl<<endl;
+              dScoreF=dScore;       //sets the dealer's final score so it doesn't add cards he hasn't flipped
               if(dScore>=17&&dScore<21){
                   cout<<"The dealer stands."<<endl;
                   dStand=true;
@@ -176,8 +180,9 @@ int main() {
                   draw=false;
               }
           }else if(turn==-2){
-          cout<<"The dealer draws a(n) "<<crdType[sub]<<".        Deck: "<<deck<<endl;
-          cout<<"Dealer's Score: "<<dScore<<endl<<endl;
+          cout<<"The dealer draws a(n) "<<crdType[sub]<<"."<<endl;
+          cout<<setw(16)<<right<<"Dealer's Score: "<<setw(3)<<right<<dScore<<endl<<endl;
+          dScoreF=dScore;
           }else if(turn==-1&&score<21&&dStand==false){
               faceD=crdType[sub];
               cout<<"The dealer draws a card and places it face-down."<<endl;
@@ -186,12 +191,17 @@ int main() {
           if(turn==-1&&stand==false){
           if(score==21){cout<<"Blackjack!"<<endl;
               win=1;
-              draw=false;}
-          if(score>21){cout<<"Busted!"<<endl;
+              draw=false;
+             } 
+          if(score>21){cout<<"Busted!"<<endl;   //don't add facedown card to dealer's score
               win=0;
-              draw=false;}
+              draw=false;
+             }
           if(score<21&&turn!=-2){
-              cout<<"h - Hit  s - Stand  v - View Hand"<<endl;
+              cout<<"Score: "<<score<<"      "<<"D Score: "<<dScoreF<<endl;
+              cout<<"h - Hit\n"
+                    "s - Stand\n"
+                    "v - View Hand"<<endl;
               cin>>ans;
               if(ans<87){ans+=32;}      //converts input to lower case
               while(ans!='h'&&ans!='s'&&ans!='v'){
@@ -222,8 +232,7 @@ int main() {
           }
           if(win>-1)draw=false;
       }while(draw);
-      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScore);
-      
+      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF);
             restart=Restart();
             if (restart==true){
             if(deck<13&&cash!=0){
@@ -351,10 +360,8 @@ float WinLoss(short nGames,float bet,float cash,char win,float g[][4],short size
         g[nGames-1][1]=0;
     }
     cash+=g[nGames-1][1];
-    cout<<"nGames"<<nGames<<endl;
-    cout<<"cash: "<<cash<<endl;
-    cout<<"g["<<nGames-1<<"][0]"<<g[nGames-1][0]<<endl;
-    cout<<"g["<<nGames-1<<"][1]"<<g[nGames-1][1]<<endl;
+    cout<<"Winnings: $"<<g[nGames-1][1]<<endl;
+    cout<<"Money: $"<<cash<<endl;
     return cash;
                             
 }
@@ -393,7 +400,7 @@ bool Restart() {
     char ans;
     bool restart;
     cout << endl;
-    cout << "Would you like to run this program again? y/n" << endl;
+    cout << "Play again? y/n" << endl;
     cin>>ans;
     while (ans != 'y' && ans != 'n' && ans != 'Y' && ans != 'N') {
         cout << "Please enter y/n" << endl;
