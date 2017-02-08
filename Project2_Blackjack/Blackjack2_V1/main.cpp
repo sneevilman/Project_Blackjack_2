@@ -24,17 +24,18 @@ short drwChck(short c[],short s);
 bool viewHnd(short,short[],short,string[],short,short);
 bool Restart();
 bool Menu();
-float WinLoss(short,float,float,char,float[][2],short);
+float WinLoss(short,float,float,char,float[][4],short,short,short);
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
     const short    SIZE(13),
                    DATSIZE(50);
     float          cash=0,
+                   strtCsh,     //used for game data
                    bet=0,
                    minBet,
                    winings=0,
-                   gameDat[DATSIZE][2]={{0,0}},    //stores game#,win/loss,winnings
+                   gameDat[DATSIZE][4]={{0,0}},    //stores game#,win/loss,winnings
                    lStks=0;
     long           hStks=0;
     short          nStks=0,
@@ -69,6 +70,7 @@ int main() {
           "Low-Stakes Blackjack!"<<endl;
     
     do{
+    cash=0;
     nGames=0;     //initialize number of games
     cout<<  "1 - Blackjack\n"
             "2 - High-Stakes Blackjack\n"
@@ -97,6 +99,7 @@ int main() {
         short cDeck[SIZE]={0};    //tracks cards taken from the deck
         
         cash=nStks+hStks+lStks;
+        strtCsh=cash;
         cout<<fixed<<setprecision(2);
         srand(time(0));       
         
@@ -219,7 +222,7 @@ int main() {
           }
           if(win>-1)draw=false;
       }while(draw);
-      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE);
+      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScore);
       
             restart=Restart();
             if (restart==true){
@@ -245,29 +248,44 @@ int main() {
             cout<<"Invalid input. Please enter y/n."<<endl;
             cin>>ans;
         }
+            float lostCsh=0,    //declaring and initializing values for earned
+                  earnedC=0;    //and lost outside the if(ans) brackets
+            
         if(ans=='y'){
             short wins=0,
                   losses=0,
                   ties=0;
                   winings=0;
+                  cout<<"Game #    Status    Player Score    Dealer Score    Winnings"
+                          <<endl;
+                  cout<<"------    ------    ------------    ------------    --------"
+                          <<endl;
             for(short l=0;l<nGames;l++){
+                if(gameDat[l][1]<0){lostCsh+=gameDat[l][1];
+                }else{earnedC+=gameDat[l][1];}
                 winings+=gameDat[l][1];
-                cout<<"Game #"<<l+1<<": ";
+                cout<<left<<setw(10)<<l+1;
                 if(gameDat[l][0]==0){
-                    cout<<setw(4)<<"Loss";
+                    cout<<setw(6)<<"Loss";
                     losses++;}
                 else if(gameDat[l][0]==1){
-                    cout<<setw(4)<<"Win";
+                    cout<<setw(6)<<"Win";
                     wins++;}
                 else if(gameDat[l][0]==2){
-                    cout<<setw(4)<<"Tie";
+                    cout<<setw(6)<<"Tie";
                     ties++;}
-                cout<<"  $"<<gameDat[l][1]<<endl;
+                cout<<"    "<<left<<setw(14)<<static_cast<short>(gameDat[l][2])
+                    <<"  "<<setw(14)<<left<<static_cast<short>(gameDat[l][3]);
+                cout<<"  $"<<gameDat[l][1];
                 cout<<endl;
             }
             cout<<"Wins: "<<wins<<endl;
             cout<<"Losses: "<<losses<<endl;
             cout<<"Ties: "<<ties<<endl;
+            cout<<"Starting Money: $"<<strtCsh<<endl;
+            cout<<"Money Gained: $"<<earnedC<<endl;
+            cout<<"Money lost: $"<<-lostCsh<<endl;
+            cout<<"Current Money: $"<<cash<<endl;
             cout<<"Total Winnings: $"<<winings<<endl;
         }
         menu=Menu();
@@ -320,12 +338,14 @@ bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
                 }//view hand
         return stand;
           }
-float WinLoss(short nGames,float bet,float cash,char win,float g[][2],short size){
+float WinLoss(short nGames,float bet,float cash,char win,float g[][4],short size,short score,short dScore){
     if(nGames%size>0){nGames=nGames%size;}  //overwrites game data for numbers/multiples of games over 50
-    g[nGames-1][0]=win;   
+    g[nGames-1][0]=win;
+    g[nGames-1][2]=score;
+    g[nGames-1][3]=dScore;
     if(win==1){                 //for this array, the 0 subscript indicates wins/losses;
-        g[nGames-1][1]=bet;   //the 1 subscript stores values for winnings
-    }else if(win==0){
+        g[nGames-1][1]=bet;   //the 1 subscript stores values for winnings. 2 subscript stores
+    }else if(win==0){           //values for your score, and 3 stores values for dealer score
         g[nGames-1][1]=-bet;
     }else{
         g[nGames-1][1]=0;
