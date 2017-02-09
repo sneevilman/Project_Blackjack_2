@@ -13,6 +13,7 @@
 #include <string>
 #include <iomanip>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -25,18 +26,20 @@ short drwChck(short c[],short s);
 bool viewHnd(short,short[],short,string[],short,short);
 bool Restart();
 bool Menu();
-float WinLoss(short,float,float,char,float[][4],short,short,short);
+float WinLoss(short,float,float,char,float[][5],short,short,short,vector<float>&);
+void linSrch(float[][5],short);
+void markSrt(vector<float>&,float[][5], short);
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
     const short    SIZE(13),
-                   DATSIZE(50);
+                   DATSIZE(1000);
     float          cash=0,
                    strtCsh,     //used for game data
                    bet=0,
                    minBet,
                    winings=0,
-                   gameDat[DATSIZE][4]={{0,0}},    //stores game#,win/loss,winnings
+                   gameDat[DATSIZE][5]={{0,0}},    //stores game#,win/loss,winnings
                    lStks=0;
     long           hStks=0;
     short          nStks=0,
@@ -63,7 +66,10 @@ int main() {
     string         crdType[SIZE]={"Ace","Two","Three","Four","Five","Six",
                                   "Seven","Eight","Nine","Ten","Jack",
                                   "Queen","King"},
+                   oponent,
+                   dealer,
                    faceD;       //dealer's facedown card
+    vector<float> cashVal(1,0);         //finds cash for each game, to be sorted later
 
     //Process/Calculations Here
     cout<<"Welcome to Caeleb Moeller's Blackjack Parlor!\n"
@@ -93,9 +99,10 @@ int main() {
         cin>>pckGame;
     }
     switch(pckGame){
-        case '1':nStks=500;break;
-        case '2':hStks=15000000;break;
-        case '3':lStks=1.50;break;
+        case '1':nStks=500;oponent="The house";dealer="The dealer";break;
+        case '2':hStks=15000000;oponent="America";dealer="Donald Trump";break;
+        case '3':lStks=1.50;oponent="Your little brother's piggy bank";
+                 dealer="Your little brother";break;
     }
     
         short cDeck[SIZE]={0};    //tracks cards taken from the deck
@@ -161,31 +168,31 @@ int main() {
           }
           
           if(turn>0&&stand==false){
-          cout<<"The dealer hands you a(n)"<<crdType[sub]<<"."<<endl;   //tell the user what they drew
+          cout<<dealer<<" hands you a(n)"<<crdType[sub]<<"."<<endl;   //tell the user what they drew
           cout<<setw(16)<<right<<"Score: "<<setw(3)<<right<<score<<endl;}
           if(turn==1&&faceD!="nothing"&&score<21&&dStand==false){
-              cout<<"The dealer flips his card. It's a(n) "<<faceD<<"."<<endl;
-              cout<<setw(16)<<right<<"Dealer's Score: "<<setw(3)<<right<<dScore<<endl<<endl;
+              cout<<dealer<<" flips his card. It's a(n) "<<faceD<<"."<<endl;
+              cout<<setw(16)<<right<<dealer<<"'s Score: "<<setw(3)<<right<<dScore<<endl<<endl;
               dScoreF=dScore;       //sets the dealer's final score so it doesn't add cards he hasn't flipped
               if(dScore>=17&&dScore<21){
-                  cout<<"The dealer stands."<<endl;
+                  cout<<dealer<<" stands."<<endl;
                   dStand=true;
               }else if(dScore>21){
-                  cout<<"The dealer busts. You win!"<<endl;
+                  cout<<dealer<<" busts. You win!"<<endl;
                   win=1;
                   draw=false;
               }else if(dScore==21){
-                  cout<<"Blackjack! The house wins!"<<endl;
+                  cout<<"Blackjack! "<<oponent<<" wins!"<<endl;
                   win=0;
                   draw=false;
               }
           }else if(turn==-2){
-          cout<<"The dealer draws a(n) "<<crdType[sub]<<"."<<endl;
-          cout<<setw(16)<<right<<"Dealer's Score: "<<setw(3)<<right<<dScore<<endl<<endl;
+          cout<<dealer<<" draws a(n) "<<crdType[sub]<<"."<<endl;
+          cout<<setw(16)<<right<<dealer<<"'s Score: "<<setw(3)<<right<<dScore<<endl<<endl;
           dScoreF=dScore;
           }else if(turn==-1&&score<21&&dStand==false){
               faceD=crdType[sub];
-              cout<<"The dealer draws a card and places it face-down."<<endl;
+              cout<<dealer<<" draws a card and places it face-down."<<endl;
           }
           
           if(turn==-1&&stand==false){
@@ -220,23 +227,23 @@ int main() {
           
           if(stand==true&&dStand==true&&score<21){
               cout<<"Your score: "<<score<<endl;
-              cout<<"Dealer's score: "<<dScore<<endl;
+              cout<<dealer<<"'s score: "<<dScore<<endl;
               if(score>dScore){cout<<"You win!"<<endl;
               win=1;}
-              if(score<dScore){cout<<"The house wins!"<<endl;
+              if(score<dScore){cout<<oponent<<" wins!"<<endl;
               win=0;}
-              if(score==dScore){cout<<"Tie! You and the dealer split the pot."
+              if(score==dScore){cout<<"Tie! You and "<<dealer<<" split the pot."
                       <<endl;
                   win=2;
               }
           }
           if(win>-1)draw=false;
       }while(draw);
-      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF);
+      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF,cashVal);
             restart=Restart();
             if (restart==true){
             if(deck<13&&cash!=0){
-                cout<<"The dealer shuffles the deck."<<endl;
+                cout<<dealer<<" shuffles the deck."<<endl;
                 deck=52;
                 for(short l=0;l<SIZE;l++){
                     cDeck[l]=0;
@@ -265,15 +272,15 @@ int main() {
                   losses=0,
                   ties=0;
                   winings=0;
-                  cout<<"Game #    Status    Player Score    Dealer Score    Winnings"
+                  cout<<"Game #    Status    Player Score    Dealer Score    Winnings    Cash"
                           <<endl;
-                  cout<<"------    ------    ------------    ------------    --------"
+                  cout<<"------    ------    ------------    ------------    --------    ----"
                           <<endl;
             for(short l=0;l<nGames;l++){
                 if(gameDat[l][1]<0){lostCsh+=gameDat[l][1];
                 }else{earnedC+=gameDat[l][1];}
                 winings+=gameDat[l][1];
-                cout<<left<<setw(10)<<l+1;
+                cout<<left<<setw(10)<<gameDat[l][4];
                 if(gameDat[l][0]==0){
                     cout<<setw(6)<<"Loss";
                     losses++;}
@@ -285,9 +292,11 @@ int main() {
                     ties++;}
                 cout<<"    "<<left<<setw(14)<<static_cast<short>(gameDat[l][2])
                     <<"  "<<setw(14)<<left<<static_cast<short>(gameDat[l][3]);
-                cout<<"  $"<<gameDat[l][1];
+                cout<<"  $"<<setw(8)<<left<<gameDat[l][1];
+                if(cashVal[l]!=0)cout<<"   $"<<cashVal[l];
                 cout<<endl;
             }
+            cout<<endl;
             cout<<"Wins: "<<wins<<endl;
             cout<<"Losses: "<<losses<<endl;
             cout<<"Ties: "<<ties<<endl;
@@ -296,11 +305,16 @@ int main() {
             cout<<"Money lost: $"<<-lostCsh<<endl;
             cout<<"Current Money: $"<<cash<<endl;
             cout<<"Total Winnings: $"<<winings<<endl;
+            linSrch(gameDat,nGames);
+            
         }
+            lStks=0;
+            nStks=0;
+            hStks=0;
         menu=Menu();
     }while(menu);
-    //Output Located Here
-
+    
+    cout<<"Thanks for playing!"<<endl;
     //Exit
     return 0;
 }
@@ -347,11 +361,13 @@ bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
                 }//view hand
         return stand;
           }
-float WinLoss(short nGames,float bet,float cash,char win,float g[][4],short size,short score,short dScore){
+float WinLoss(short nGames,float bet,float cash,char win,float g[][5],
+              short size,short score,short dScore,vector<float> &cashVal){
     if(nGames%size>0){nGames=nGames%size;}  //overwrites game data for numbers/multiples of games over 50
     g[nGames-1][0]=win;
     g[nGames-1][2]=score;
     g[nGames-1][3]=dScore;
+    g[nGames-1][4]=nGames;
     if(win==1){                 //for this array, the 0 subscript indicates wins/losses;
         g[nGames-1][1]=bet;   //the 1 subscript stores values for winnings. 2 subscript stores
     }else if(win==0){           //values for your score, and 3 stores values for dealer score
@@ -360,6 +376,7 @@ float WinLoss(short nGames,float bet,float cash,char win,float g[][4],short size
         g[nGames-1][1]=0;
     }
     cash+=g[nGames-1][1];
+    cashVal[nGames-1]=cash;
     cout<<"Winnings: $"<<g[nGames-1][1]<<endl;
     cout<<"Money: $"<<cash<<endl;
     return cash;
@@ -427,4 +444,36 @@ bool Menu() {
     else
         menu = false;
     return menu;
+}
+void linSrch(float gd[][5],short gSize){
+    const short FIND=21;
+    short pos=0;
+    vector<short> p(10,0);      
+    for(short i=0;i<gSize;i++){
+        if(gd[i][2]==FIND||gd[i][3]==FIND){
+            p[pos]=i+1;
+            pos++;
+            }
+    }
+            cout<<"Games with blackjacks: ";
+            for(short sub=0;p[sub]!=0;sub++){
+                if(sub>0){cout<<", ";}  //formats so no trailing comma
+                cout<<"#"<<p[sub];    
+
+
+    }
+}
+
+void markSrt(int a[],int n,int perLine){
+    for(int i=0;i<n-1;i++){
+    int pos=i;
+        for(int i=pos+1;i<n;i++){
+            if(a[pos]>a[i]){
+                swap(a[pos],a[i]);
+                for(short gdL=0;gdL<5;gdL++){
+                    swap(gd[pos][gdL],gd[i][gdL]);
+                }
+            }
+        }
+    }
 }
