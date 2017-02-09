@@ -34,7 +34,9 @@ void linSrch(float[][4],short);
 void markSrt(vector<float>&,float[][4],short,short[]);
 void swapV(float &,float &);
 void swapA(short &,short &);
+char PckGame();
 char YesNo();
+void Magic(string[],short);
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
@@ -69,7 +71,8 @@ int main() {
                    stand,       //user stops drawing
                    dStand,      //dealer stops drawing
                    restart,     //restarts the game
-                   menu;        //continues the menu loop
+                   menu,        //continues the menu loop
+                   autoPly;    //auto-loops the program
     string         crdType[SIZE]={"Ace","Two","Three","Four","Five","Six",
                                   "Seven","Eight","Nine","Ten","Jack",
                                   "Queen","King"},
@@ -77,6 +80,9 @@ int main() {
                    dealer,
                    faceD;       //dealer's facedown card
     vector<float> cashVal(1,0);         //finds cash for each game, to be sorted later
+
+    
+    srand(static_cast<int>(time(0)));       
 
     //Process/Calculations Here
     cout<<"Welcome to Caeleb Moeller's Blackjack Parlor!\n"
@@ -87,23 +93,17 @@ int main() {
     do{
     cash=0;
     nGames=0;     //initialize number of games
-    cout<<  "1 - Blackjack\n"
-            "2 - High-Stakes Blackjack\n"
-            "3 - Low-Stakes Blackjack\n"
-            "4 - Rules\n"
-            "Pick a game mode."<<endl;
-    cin>>pckGame;
-    while(pckGame<49||pckGame>52){
-        cout<<"Invalid Input. Please enter a command from the list."<<endl;
-        cin>>pckGame;
+    cout<<"Autoplay?"<<endl;
+    ans=YesNo();
+    autoPly=ans=='y'?true:false;
+    pckGame=PckGame();
+    while(pckGame=='5'){
+        Magic(crdType,SIZE);
+        pckGame=PckGame();
     }
     while(pckGame=='4'){
         Rules();
-        cout<<"1 - Blackjack\n"
-              "2 - High-Stakes Blackjack\n"
-              "3 - Low-Stakes Blackjack\n"
-              "Pick a game mode."<<endl;
-        cin>>pckGame;
+        pckGame=PckGame();
     }
     switch(pckGame){
         case '1':nStks=500;oponent="The house";dealer="The dealer";break;
@@ -117,8 +117,6 @@ int main() {
         cash=nStks+hStks+lStks;
         strtCsh=cash;
         cout<<fixed<<setprecision(2);
-        srand(time(0));       
-        bool stopIt=false;
     do {
         nGames++;
         win=-1;                   //initialize as value that doesn't end game
@@ -141,14 +139,15 @@ int main() {
         if(pckGame=='2')cout<<" (in millions)";
         cout<<"."<<endl;
         cout<<"Minimum Bet: $"<<minBet<<endl;
+        if(autoPly==false){
         cin>>bet;
+        }else{bet=rand()%20+20;}
         if(pckGame=='2')bet*=MILLION;
         while (bet<minBet){cout<<"Your bet is too low.\nPlace a bet."<<endl;
                            cin>>bet;}
         while (bet>cash){cout<<"You can't afford that.\n"
                 "Place a bet."<<endl;
                 cin>>bet;}
-        
       do {
           score=0;
           dScore=0;
@@ -219,7 +218,9 @@ int main() {
               cout<<"h - Hit\n"
                     "s - Stand\n"
                     "v - View Hand"<<endl;
-              cin>>ans;
+              if(autoPly==false){cin>>ans;}
+              else if(score<17){ans='h';}
+              else{ans='s';}
               if(ans<87){ans+=32;}      //converts input to lower case
               while(ans!='h'&&ans!='s'&&ans!='v'){
                   cout<<"Invalid input. Please enter one of the listed commands."
@@ -251,7 +252,11 @@ int main() {
       }while(draw);
       cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF,cashVal,gameNum);
 
-            restart=Restart();
+            if(autoPly==false){
+            restart=Restart();}
+      if(autoPly==true&&nGames<21){
+          restart=true;
+      }else{restart=false;}
             if (restart==true){
             if(deck<13&&cash!=0){
                 cout<<dealer<<" shuffles the deck."<<endl;
@@ -297,7 +302,7 @@ short drwChck(short c[],short s){
     }while(fourCrd);
     c[sub]++;
     return sub;
-}
+}       //draws a card and validates it
 bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
  bool stand;
  char ans;
@@ -327,8 +332,8 @@ bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
                     case 's':stand=true;break;
                 }//view hand
         return stand;
-          }
-float WinLoss(short nGames,float bet,float cash,char win,float g[][4],
+          } //shows you your hand
+float WinLoss(short nGames,float bet,float cash,char win,float g[][4],      //performs win/loss functions at the end of each game
               short size,short score,short dScore,vector<float> &cashVal,
         short gameNum[]){
     if(nGames%size>0){nGames=nGames%size;}  //overwrites game data for numbers/multiples of games over 50
@@ -380,7 +385,7 @@ void Rules(){
             "If you and the dealer end with the same score, it's a tie,\n"
             "and you get your bet back.\n"
             "Now go and win some money!"<<endl;
-}
+}       //show user the rules
 bool Restart() {
     char ans;
     bool restart;
@@ -392,7 +397,7 @@ bool Restart() {
     else
         restart = false;
     return restart;
-}
+}    //sets game loop check
 bool Menu() {
     char ans;
     bool menu;
@@ -404,7 +409,7 @@ bool Menu() {
     else
         menu = false;
     return menu;
-}
+}       //sets menu loop check
 void linSrch(float gd[][4],short gSize){
     const short FIND=21;
     short pos=0;
@@ -421,7 +426,7 @@ void linSrch(float gd[][4],short gSize){
                 cout<<"#"<<p[sub];   
     }
             cout<<endl;
-}
+}   //searches the game data for blackjacks
 void markSrt(vector<float>&cashVal,float gd[][4],short nGames,short gameNum[]){
     for(short i=0;i<nGames-1;i++){ 
         for(short l=i+1;l<nGames;l++){
@@ -431,17 +436,17 @@ void markSrt(vector<float>&cashVal,float gd[][4],short nGames,short gameNum[]){
             }
         }
     }
-}
+}   //sorts the games by cash
 void swapV(float &a,float &b){
     a=static_cast<int>(a)^static_cast<int>(b);
     b=static_cast<int>(a)^static_cast<int>(b);
     a=static_cast<int>(a)^static_cast<int>(b);
-}
+}   //swap function for cash vector
 void swapA(short &a,short &b){
     a=a^b;
     b=a^b;
     a=a^b;
-}
+}   //swap function for data array
 
 char YesNo(){
     char ans;
@@ -452,8 +457,8 @@ char YesNo(){
             cin>>ans;
         }
     return ans;
-}
-void gData(float winings,short nGames,float gameDat[][4],short gameNum[],
+}   //input and validate answer to y/n
+void gData(float winings,short nGames,float gameDat[][4],short gameNum[],   //formats and outputs game data values
         vector<float>&cashVal,float strtCsh,float cash) {  
             short wins=0,
             losses=0,
@@ -462,6 +467,7 @@ void gData(float winings,short nGames,float gameDat[][4],short gameNum[],
             earnedC=0;
             winings=0;
             short p;
+            ofstream out;
             cout<<"Would you like to sort your games by amount of money?"
                   <<endl;
             char ans=YesNo();
@@ -469,6 +475,46 @@ void gData(float winings,short nGames,float gameDat[][4],short gameNum[],
             if(ans=='y'){
             markSrt(cashVal,gameDat,nGames,gameNum);    //sorts results by cashVal[]
             }
+            out.open("GameData.rtf");
+            out<<"G#    W/L/T    PScor    DScor    $Won    $Held"
+                          <<endl;
+                  out<<"--    -----    -----    -----    ----    -----"
+                          <<endl;
+            for(short l=0;l<nGames;l++){
+                if(ans=='y') p=gameNum[l];
+                else p=l;
+                if(gameDat[p][1]<0){lostCsh+=gameDat[p][1];
+                }else{earnedC+=gameDat[p][1];}
+                winings+=gameDat[p][1];
+                out<<left<<setw(7)<<gameNum[l]+1;    
+                if(gameDat[p][0]==0){
+                    out<<setw(9)<<"Loss";
+                losses++;}
+                else if(gameDat[p][0]==1){
+                    out<<setw(9)<<"Win";
+                    wins++;}
+                else if(gameDat[p][0]==2){
+                    out<<setw(9)<<"Tie";
+                            ties++;}
+                out<<left<<setw(5)<<static_cast<short>(gameDat[p][2])
+                <<"    "<<setw(8)<<left<<static_cast<short>(gameDat[p][3]);
+                out<<"$"<<setw(4)<<left<<gameDat[p][1];
+                if(cashVal[l]!=0)out<<"   $"<<cashVal[l];
+                out<<endl;
+                }
+                  cout<<"Your data has been saved to GameData.rtf."<<endl<<endl;
+                 
+                  
+            out<<endl;
+            out<<"Wins: "<<wins<<endl;
+            out<<"Losses: "<<losses<<endl;
+            out<<"Ties: "<<ties<<endl;
+            out<<"Starting Money: $"<<strtCsh<<endl;
+            out<<"Money Gained: $"<<earnedC<<endl;
+            out<<"Money lost: $"<<-lostCsh<<endl;
+            out<<"Current Money: $"<<cash<<endl;
+            out<<"Total Winnings: $"<<winings<<endl;
+            out.close();
             
             cout<<"Game #    Status    Player Score    Dealer Score    Winnings    Cash"
                           <<endl;
@@ -509,3 +555,68 @@ void gData(float winings,short nGames,float gameDat[][4],short gameNum[],
             cout<<"Total Winnings: $"<<winings<<endl;
             linSrch(gameDat,nGames);                    //checks for blackjacks
 }
+void Magic(string crdType[],short SIZE){
+    string cast[4]={"Hearts","Diamonds","Clubs","Spades"};
+    cout<<"In the crowded casino you notice an amateur magician trying to get\n"
+            "people's attention. You decide to humor him. As you approach, he\n"
+            "holds out an entire deck of cards and tells you to pick one. \n"
+            "\nYou wrest a card from the stack; it's the ";
+            short pickOne=rand()%13+1,
+                  faceTyp=rand()%4+1,
+                  guesses=0;
+            char  ans;
+            
+            cout<<crdType[pickOne-1]<<" of "<<cast[faceTyp-1]<<"."<<endl<<endl;
+            
+            short dckPlce=4*pickOne+faceTyp,
+                  bottom=0,middle,top=52;
+            //Loop until found
+            do{
+                guesses++;
+                ans='n';
+            cout<<"The magician carefully puts the card back exactly where it was\n"
+              "without shuffling the deck. Then, cutting the deck in half,\n"
+              "he pulls a card from the center.\n"
+              "\"Was the ";
+                middle=(bottom+top)/2;
+                pickOne=(middle-middle%4)/4;
+                faceTyp=middle%4;
+                cout<<crdType[pickOne-1]<<" of "<<cast[faceTyp]<<" your card?\""<<endl;
+                ans=YesNo();
+                if(ans=='n'){
+                if(middle<dckPlce){
+                    bottom=middle+1;
+                }else{
+                    top=middle-1;
+                }
+                }
+            }while(ans=='n'&&bottom<=top);
+            if(ans=='y'){
+                cout<<"The magician fist pumps the air. \"Noice! And it only \n"
+                        "took me "<<guesses<<" guesses!\"\n"
+                        "As you leave the amateur magician, \n"
+                        "you're not sure if you're impressed or disappointed."
+                        <<endl<<endl;
+            }else{
+                cout<<"The magician looks glum. \"I could've sworn that was \n"
+                        "your card...\"\n"
+                        "That's "<<guesses*15<<" seconds you're not getting"
+                        " back."<<endl<<endl;
+            }
+
+}   //binary search
+char PckGame(){
+    char pckGame;
+    cout<<  "1 - Blackjack\n"
+            "2 - High-Stakes Blackjack\n"
+            "3 - Low-Stakes Blackjack\n"
+            "4 - Rules\n"
+            "5 - Amateur Magician\n"
+            "Pick a game mode."<<endl;
+        cin>>pckGame;
+        while(pckGame<49||pckGame>53){
+        cout<<"Invalid Input. Please enter a command from the list."<<endl;
+        cin>>pckGame;
+    }
+        return pckGame;
+}   //input and validate game choice
