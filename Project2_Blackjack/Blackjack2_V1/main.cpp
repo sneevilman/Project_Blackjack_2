@@ -19,6 +19,8 @@ using namespace std;
 
 //User Libraries Here
 
+//global constants
+const unsigned int MILLION=1000000;
 
 //Function Prototypes Here
 void Rules();
@@ -26,9 +28,13 @@ short drwChck(short c[],short s);
 bool viewHnd(short,short[],short,string[],short,short);
 bool Restart();
 bool Menu();
-float WinLoss(short,float,float,char,float[][5],short,short,short,vector<float>&);
-void linSrch(float[][5],short);
-void markSrt(vector<float>&,float[][5], short);
+float WinLoss(short,float,float,char,float[][4],short,short,short,vector<float> &cashVal,short[]);
+void gData(float,short,float[][4],short[],vector<float> &cashVal,float,float);
+void linSrch(float[][4],short);
+void markSrt(vector<float>&,float[][4],short,short[]);
+void swapV(float &,float &);
+void swapA(short &,short &);
+char YesNo();
 //Program Execution Begins Here
 int main() {
     //Declare and process variables
@@ -39,7 +45,7 @@ int main() {
                    bet=0,
                    minBet,
                    winings=0,
-                   gameDat[DATSIZE][5]={{0,0}},    //stores game#,win/loss,winnings
+                   gameDat[DATSIZE][4]={{0,0}},    //stores game#,win/loss,winnings
                    lStks=0;
     long           hStks=0;
     short          nStks=0,
@@ -52,6 +58,7 @@ int main() {
                    dScore,      //dealer's blackjack score
                    dScoreF,     //dealer's final score, for bookkeeping
                    nGames,      //number of games
+                   gameNum[DATSIZE],
                    turn;        //determines whose turn it is
     char           pckGame,     //user picks game mode
                    win,         //passes win/loss to win/loss function
@@ -111,7 +118,7 @@ int main() {
         strtCsh=cash;
         cout<<fixed<<setprecision(2);
         srand(time(0));       
-        
+        bool stopIt=false;
     do {
         nGames++;
         win=-1;                   //initialize as value that doesn't end game
@@ -126,13 +133,16 @@ int main() {
         dStand=false;
         
         minBet=pckGame=='1'?20:
-               pckGame=='2'?500000:
+               pckGame=='2'?1000000:
                pckGame=='3'?0.10:0;
         
         cout<<"Your money: $"<<cash<<endl;
-        cout<<"Place a bet."<<endl;
+        cout<<"Place a bet";
+        if(pckGame=='2')cout<<" (in millions)";
+        cout<<"."<<endl;
         cout<<"Minimum Bet: $"<<minBet<<endl;
         cin>>bet;
+        if(pckGame=='2')bet*=MILLION;
         while (bet<minBet){cout<<"Your bet is too low.\nPlace a bet."<<endl;
                            cin>>bet;}
         while (bet>cash){cout<<"You can't afford that.\n"
@@ -239,7 +249,8 @@ int main() {
           }
           if(win>-1)draw=false;
       }while(draw);
-      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF,cashVal);
+      cash=WinLoss(nGames,bet,cash,win,gameDat,DATSIZE,score,dScoreF,cashVal,gameNum);
+
             restart=Restart();
             if (restart==true){
             if(deck<13&&cash!=0){
@@ -257,57 +268,13 @@ int main() {
         
         } while (restart);
         
-        cout<<"Would you like to view your game data?"<<endl;
-        cin>>ans;
-        if(ans<79){ans+=32;}
-        while(ans!='n'&&ans!='y'){
-            cout<<"Invalid input. Please enter y/n."<<endl;
-            cin>>ans;
-        }
-            float lostCsh=0,    //declaring and initializing values for earned
-                  earnedC=0;    //and lost outside the if(ans) brackets
+        cout<<"Would you like to view your game data? y/n"<<endl;
+        ans=YesNo();
             
         if(ans=='y'){
-            short wins=0,
-                  losses=0,
-                  ties=0;
-                  winings=0;
-                  cout<<"Game #    Status    Player Score    Dealer Score    Winnings    Cash"
-                          <<endl;
-                  cout<<"------    ------    ------------    ------------    --------    ----"
-                          <<endl;
-            for(short l=0;l<nGames;l++){
-                if(gameDat[l][1]<0){lostCsh+=gameDat[l][1];
-                }else{earnedC+=gameDat[l][1];}
-                winings+=gameDat[l][1];
-                cout<<left<<setw(10)<<gameDat[l][4];
-                if(gameDat[l][0]==0){
-                    cout<<setw(6)<<"Loss";
-                    losses++;}
-                else if(gameDat[l][0]==1){
-                    cout<<setw(6)<<"Win";
-                    wins++;}
-                else if(gameDat[l][0]==2){
-                    cout<<setw(6)<<"Tie";
-                    ties++;}
-                cout<<"    "<<left<<setw(14)<<static_cast<short>(gameDat[l][2])
-                    <<"  "<<setw(14)<<left<<static_cast<short>(gameDat[l][3]);
-                cout<<"  $"<<setw(8)<<left<<gameDat[l][1];
-                if(cashVal[l]!=0)cout<<"   $"<<cashVal[l];
-                cout<<endl;
-            }
-            cout<<endl;
-            cout<<"Wins: "<<wins<<endl;
-            cout<<"Losses: "<<losses<<endl;
-            cout<<"Ties: "<<ties<<endl;
-            cout<<"Starting Money: $"<<strtCsh<<endl;
-            cout<<"Money Gained: $"<<earnedC<<endl;
-            cout<<"Money lost: $"<<-lostCsh<<endl;
-            cout<<"Current Money: $"<<cash<<endl;
-            cout<<"Total Winnings: $"<<winings<<endl;
-            linSrch(gameDat,nGames);
-            
+        gData(winings,nGames,gameDat,gameNum,cashVal,strtCsh,cash);
         }
+        
             lStks=0;
             nStks=0;
             hStks=0;
@@ -361,13 +328,14 @@ bool viewHnd(short h,short cH[],short sizeH,string t[],short sizeT,short score){
                 }//view hand
         return stand;
           }
-float WinLoss(short nGames,float bet,float cash,char win,float g[][5],
-              short size,short score,short dScore,vector<float> &cashVal){
+float WinLoss(short nGames,float bet,float cash,char win,float g[][4],
+              short size,short score,short dScore,vector<float> &cashVal,
+        short gameNum[]){
     if(nGames%size>0){nGames=nGames%size;}  //overwrites game data for numbers/multiples of games over 50
     g[nGames-1][0]=win;
     g[nGames-1][2]=score;
     g[nGames-1][3]=dScore;
-    g[nGames-1][4]=nGames;
+    gameNum[nGames-1]=nGames-1;   
     if(win==1){                 //for this array, the 0 subscript indicates wins/losses;
         g[nGames-1][1]=bet;   //the 1 subscript stores values for winnings. 2 subscript stores
     }else if(win==0){           //values for your score, and 3 stores values for dealer score
@@ -418,12 +386,8 @@ bool Restart() {
     bool restart;
     cout << endl;
     cout << "Play again? y/n" << endl;
-    cin>>ans;
-    while (ans != 'y' && ans != 'n' && ans != 'Y' && ans != 'N') {
-        cout << "Please enter y/n" << endl;
-        cin>>ans;
-    }
-    if (ans == 'y' || ans == 'Y')
+    ans=YesNo();
+    if (ans == 'y')
         restart = true;
     else
         restart = false;
@@ -434,18 +398,14 @@ bool Menu() {
     bool menu;
     cout << endl;
     cout << "Would you like to return to the menu? y/n" << endl;
-    cin>>ans;
-    while (ans != 'y' && ans != 'n' && ans != 'Y' && ans != 'N') {
-        cout << "Please enter y/n" << endl;
-        cin>>ans;
-    }
-    if (ans == 'y' || ans == 'Y')
+    ans=YesNo();
+    if (ans == 'y')
         menu = true;
     else
         menu = false;
     return menu;
 }
-void linSrch(float gd[][5],short gSize){
+void linSrch(float gd[][4],short gSize){
     const short FIND=21;
     short pos=0;
     vector<short> p(10,0);      
@@ -458,22 +418,94 @@ void linSrch(float gd[][5],short gSize){
             cout<<"Games with blackjacks: ";
             for(short sub=0;p[sub]!=0;sub++){
                 if(sub>0){cout<<", ";}  //formats so no trailing comma
-                cout<<"#"<<p[sub];    
-
-
+                cout<<"#"<<p[sub];   
     }
+            cout<<endl;
 }
-
-void markSrt(int a[],int n,int perLine){
-    for(int i=0;i<n-1;i++){
-    int pos=i;
-        for(int i=pos+1;i<n;i++){
-            if(a[pos]>a[i]){
-                swap(a[pos],a[i]);
-                for(short gdL=0;gdL<5;gdL++){
-                    swap(gd[pos][gdL],gd[i][gdL]);
-                }
+void markSrt(vector<float>&cashVal,float gd[][4],short nGames,short gameNum[]){
+    for(short i=0;i<nGames-1;i++){ 
+        for(short l=i+1;l<nGames;l++){
+            if(cashVal[i]>cashVal[l]){
+                swapV(cashVal[i],cashVal[l]);
+                swapA(gameNum[i],gameNum[l]);
             }
         }
     }
+}
+void swapV(float &a,float &b){
+    a=static_cast<int>(a)^static_cast<int>(b);
+    b=static_cast<int>(a)^static_cast<int>(b);
+    a=static_cast<int>(a)^static_cast<int>(b);
+}
+void swapA(short &a,short &b){
+    a=a^b;
+    b=a^b;
+    a=a^b;
+}
+
+char YesNo(){
+    char ans;
+    cin>>ans;
+        if(ans<79){ans+=32;}
+        while(ans!='n'&&ans!='y'){
+            cout<<"Invalid input. Please enter y/n."<<endl;
+            cin>>ans;
+        }
+    return ans;
+}
+void gData(float winings,short nGames,float gameDat[][4],short gameNum[],
+        vector<float>&cashVal,float strtCsh,float cash) {  
+            short wins=0,
+            losses=0,
+            ties=0;
+            float lostCsh=0,
+            earnedC=0;
+            winings=0;
+            short p;
+            cout<<"Would you like to sort your games by amount of money?"
+                  <<endl;
+            char ans=YesNo();
+                  
+            if(ans=='y'){
+            markSrt(cashVal,gameDat,nGames,gameNum);    //sorts results by cashVal[]
+            }
+            
+            cout<<"Game #    Status    Player Score    Dealer Score    Winnings    Cash"
+                          <<endl;
+                  cout<<"------    ------    ------------    ------------    --------    ----"
+                          <<endl;
+            for(short l=0;l<nGames;l++){
+                if(ans=='y') p=gameNum[l];
+                else p=l;
+                if(gameDat[p][1]<0){lostCsh+=gameDat[p][1];
+                }else{earnedC+=gameDat[p][1];}
+                winings+=gameDat[p][1];
+                cout<<left<<setw(10)<<gameNum[l]+1;    
+                if(gameDat[p][0]==0){
+                    cout<<setw(6)<<"Loss";
+                losses++;}
+                else if(gameDat[p][0]==1){
+                    cout<<setw(6)<<"Win";
+                    wins++;}
+                else if(gameDat[p][0]==2){
+                    cout<<setw(6)<<"Tie";
+                            ties++;}
+                cout<<"    "<<left<<setw(14)<<static_cast<short>(gameDat[p][2])
+                    <<"  "<<setw(14)<<left<<static_cast<short>(gameDat[p][3]);
+                cout<<"  $"<<setw(8)<<left<<gameDat[p][1];
+                if(cashVal[l]!=0)cout<<"   $"<<cashVal[l];
+                cout<<endl;
+                }
+                  
+                  
+            cout<<endl;
+            cout<<"Wins: "<<wins<<endl;
+            cout<<"Losses: "<<losses<<endl;
+            cout<<"Ties: "<<ties<<endl;
+            cout<<"Starting Money: $"<<strtCsh<<endl;
+            cout<<"Money Gained: $"<<earnedC<<endl;
+            cout<<"Money lost: $"<<-lostCsh<<endl;
+            cout<<"Current Money: $"<<cash<<endl;
+            cout<<"Total Winnings: $"<<winings<<endl;
+            linSrch(gameDat,nGames);                    //checks for blackjacks
 }
